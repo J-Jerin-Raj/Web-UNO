@@ -1,0 +1,92 @@
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #4fc3f7, #01579b);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#table {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle, #7CFC98, #2e7d32);
+  border-radius: 50%;
+}
+
+/* Players */
+.player {
+  position: absolute;
+  color: white;
+}
+
+.top {
+  top: 3%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.left {
+  left: 3%;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.right {
+  right: 3%;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+}
+
+.bottom {
+  bottom: 3%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Card Styles */
+.card {
+  width: 60px;
+  height: 90px;
+  border-radius: 10px;
+  margin: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.red { background: #e53935; }
+.blue { background: #1e88e5; }
+.green { background: #43a047; }
+.yellow { background: #fdd835; color: black; }
+
+.card-back {
+  width: 60px;
+  height: 90px;
+  background: #222;
+  border-radius: 10px;
+  margin-top: 5px;
+}
+
+/* Center piles */
+#center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.pile {
+  width: 80px;
+  height: 120px;
+  background: #111;
+  color: white;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
