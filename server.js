@@ -2,118 +2,96 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 
+const { createDeck, isValidPlay, dealHands } = require("./cards");
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static("public"));
 
-const COLORS = ["red", "blue", "green", "yellow"];
-
 let players = [];
-let deck = [];
 let hands = {};
+let deck = [];
 let discardPile = null;
 let currentTurn = 0;
-
-/* ---------- GAME LOGIC ---------- */
-
-function createDeck() {
-  deck = [];
-  COLORS.forEach(color => {
-    for (let i = 0; i <= 9; i++) {
-      deck.push({ color, value: i });
-    }
-  });
-  deck.sort(() => Math.random() - 0.5);
-}
-
-function startGame() {
-  createDeck();
-  hands = {};
-
-  players.forEach(id => {
-    hands[id] = [];
-    for (let i = 0; i < 7; i++) {
-      hands[id].push(deck.pop());
-    }
-  });
-
-  discardPile = deck.pop();
-  currentTurn = 0;
-
-  io.emit("gameState", {
-    hands,
-    discardPile,
-    currentTurn,
-    players
-  });
-}
-
-/* ---------- SOCKET EVENTS ---------- */
+let direction = 1;
+let drawStack = 0;
 
 io.on("connection", socket => {
-  console.log("Player connected:", socket.id);
-
-  if (players.length < 4) {
-    players.push(socket.id);
-    hands[socket.id] = [];
-  }
+  players.push(socket.id);
 
   socket.emit("playerData", {
     id: socket.id,
-    index: players.indexOf(socket.id)
+    index: players.length - 1
   });
 
-  if (players.length >= 2) {
+  if (players.length >= 2 && deck.length === 0) {
     startGame();
   }
 
-  socket.on("playCard", cardIndex => {
-    const playerId = socket.id;
+  socket.on("playCard", index => {
+    if (players[currentTurn] !== socket.id) return;
 
-    if (players[currentTurn] !== playerId) return;
+    const card = hands[socket.id][index];
+    if (!isValidPlay(card, discardPile, drawStack)) return;
 
-    const card = hands[playerId][cardIndex];
-    if (
-      card.color === discardPile.color ||
-      card.value === discardPile.value
-    ) {
-      discardPile = card;
-      hands[playerId].splice(cardIndex, 1);
-      currentTurn = (currentTurn + 1) % players.length;
+    hands[socket.id].splice(index, 1);
+    discardPile = card;
 
-      io.emit("gameState", {
-        hands,
-        discardPile,
-        currentTurn,
-        players
-      });
-    }
+    if (card.value === "+2") drawStack += 2;
+    if (card.value === "+4") drawStack += 4;
+
+    if (card.value === "reverse") direction *= -1;
+    if (card.value === "skip") nextTurn();
+
+    nextTurn();
+    broadcast();
   });
 
   socket.on("drawCard", () => {
-    const playerId = socket.id;
-    if (players[currentTurn] !== playerId) return;
+    if (players[currentTurn] !== socket.id) return;
 
-    hands[playerId].push(deck.pop());
-    currentTurn = (currentTurn + 1) % players.length;
+    const drawAmount = drawStack || 1;
+    for (let i = 0; i < drawAmount; i++) {
+      hands[socket.id].push(deck.pop());
+    }
 
-    io.emit("gameState", {
-      hands,
-      discardPile,
-      currentTurn,
-      players
-    });
+    drawStack = 0;
+    nextTurn();
+    broadcast();
   });
 
   socket.on("disconnect", () => {
-    console.log("Player disconnected:", socket.id);
-    players = players.filter(id => id !== socket.id);
+    players = players.filter(p => p !== socket.id);
     delete hands[socket.id];
   });
 });
 
+function startGame() {
+  deck = createDeck();
+  hands = dealHands(deck, players);
+  discardPile = deck.pop();
+  currentTurn = 0;
+  direction = 1;
+  drawStack = 0;
+  broadcast();
+}
+
+function nextTurn() {
+  currentTurn = (currentTurn + direction + players.length) % players.length;
+}
+
+function broadcast() {
+  io.emit("gameState", {
+    players,
+    hands,
+    discardPile,
+    currentTurn,
+    drawStack
+  });
+}
+
 server.listen(3000, () => {
-  console.log("Server running on http://localhost:3000");
+  console.log("🔥 UNO No Mercy running on http://localhost:3000");
 });

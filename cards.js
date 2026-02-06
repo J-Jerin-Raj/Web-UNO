@@ -1,12 +1,21 @@
 const COLORS = ["red", "blue", "green", "yellow"];
+const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
 
 function createDeck() {
   const deck = [];
+
   COLORS.forEach(color => {
-    for (let i = 0; i <= 9; i++) {
-      deck.push({ color, value: i });
-    }
+    VALUES.forEach(value => {
+      deck.push({ color, value });
+      if (value !== "0") deck.push({ color, value });
+    });
   });
+
+  for (let i = 0; i < 4; i++) {
+    deck.push({ color: "wild", value: "wild" });
+    deck.push({ color: "wild", value: "+4" });
+  }
+
   return shuffle(deck);
 }
 
@@ -18,10 +27,15 @@ function shuffle(deck) {
   return deck;
 }
 
-function isValidPlay(card, topCard) {
+function isValidPlay(card, topCard, drawStack) {
+  if (drawStack > 0) {
+    return card.value === "+2" || card.value === "+4";
+  }
+
   return (
     card.color === topCard.color ||
-    card.value === topCard.value
+    card.value === topCard.value ||
+    card.color === "wild"
   );
 }
 
