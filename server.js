@@ -74,11 +74,18 @@ io.on("connection", socket => {
         broadcast();
     }
 
-    socket.on("playCard", index => {
+    socket.on("playCard", data => {
+        const index = data.index;
+        const chosenColor = data.chosenColor;
+
         if (players[currentTurn] !== socket.id) return;
 
         const hand = hands[socket.id];
         const card = hand[index];
+        if (card.color === "wild" && chosenColor) {
+            card.color = chosenColor;
+        }
+
         if (!card) return;
 
         if (!isValidPlay(card, discardPile, drawStack)) {

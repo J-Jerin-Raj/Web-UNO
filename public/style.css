@@ -137,3 +137,41 @@ body {
   bottom: 20px;
   z-index: 100;
 }
+
+.menu {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, #111, #000);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.color-picker {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+}
+
+.picker-box {
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+}
+
+.colors button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  margin: 10px;
+  cursor: pointer;
+}

@@ -1,3 +1,10 @@
+const menu = document.getElementById("menu");
+const startBtn = document.getElementById("startBtn");
+
+startBtn.onclick = () => {
+  menu.style.display = "none";
+};
+
 const socket = io();
 
 let myId = null;
@@ -6,6 +13,22 @@ let myIndex = null;
 const handDiv = document.getElementById("hand");
 const discardDiv = document.getElementById("discard-pile");
 const drawPile = document.getElementById("draw-pile");
+const colorPicker = document.getElementById("colorPicker");
+let pendingWildIndex = null;
+
+document.querySelectorAll(".colors button").forEach(btn => {
+  btn.onclick = () => {
+    const chosenColor = btn.dataset.color;
+    colorPicker.classList.add("d-none");
+
+    socket.emit("playCard", {
+      index: pendingWildIndex,
+      chosenColor
+    });
+
+    pendingWildIndex = null;
+  };
+});
 
 socket.on("playerData", data => {
   myId = data.id;
@@ -59,7 +82,14 @@ function renderHand(hand, isMyTurn) {
     div.style.zIndex = index;
 
     if (isMyTurn) {
-      div.onclick = () => socket.emit("playCard", index);
+      div.onclick = () => {
+        if (card.color === "wild") {
+          pendingWildIndex = index;
+          colorPicker.classList.remove("d-none");
+        } else {
+          socket.emit("playCard", { index });
+        }
+      };
     } else {
       div.style.opacity = "0.5";
     }
