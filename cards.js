@@ -29,7 +29,8 @@ function shuffle(deck) {
   return deck;
 }
 
-function isValidPlay(card, topCard, drawStack) {
+function isValidPlay(card, topCard, activeColor, drawStack) {
+  // Draw stack rules
   if (drawStack > 0) {
     return (
       card.color === "wild" ||
@@ -37,10 +38,13 @@ function isValidPlay(card, topCard, drawStack) {
     );
   }
 
+  // Wilds are always playable
+  if (card.color === "wild") return true;
+
+  // MUST match active color or value
   return (
-    card.color === topCard.color ||
-    card.value === topCard.value ||
-    card.color === "wild"
+    card.color === activeColor ||
+    card.value === topCard.value
   );
 }
 

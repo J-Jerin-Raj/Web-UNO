@@ -39,6 +39,8 @@ socket.on("gameState", state => {
   if (!myId) return;
   if (!state.hands || !state.hands[myId]) return;
 
+  discardDiv.className = `pile ${state.activeColor}`;
+
   const myHand = state.hands[myId];
   const isMyTurn = state.players[state.currentTurn] === myId;
 

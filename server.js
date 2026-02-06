@@ -19,6 +19,7 @@ let discardPile = null;
 let currentTurn = 0;
 let direction = 1;
 let drawStack = 0;
+let activeColor = null;
 
 /* ---------- HELPERS ---------- */
 
@@ -29,6 +30,7 @@ function startGame() {
     // Ensure first discard is NOT wild +4
     do {
         discardPile = deck.pop();
+        activeColor = discardPile.color;
     } while (discardPile.color === "wild");
 
     currentTurn = 0;
@@ -49,7 +51,8 @@ function broadcast() {
         hands,
         discardPile,
         currentTurn,
-        drawStack
+        drawStack,
+        activeColor
     });
 }
 
@@ -75,49 +78,37 @@ io.on("connection", socket => {
     }
 
     socket.on("playCard", data => {
-        const index = data.index;
-        const chosenColor = data.chosenColor;
-
         if (players[currentTurn] !== socket.id) return;
 
+        const { index, chosenColor } = data;
         const hand = hands[socket.id];
         const card = hand[index];
-        if (card.color === "wild" && chosenColor) {
-            card.color = chosenColor;
-        }
-
         if (!card) return;
 
-        if (!isValidPlay(card, discardPile, drawStack)) {
+        // Validate play FIRST (wilds allowed)
+        if (!isValidPlay(card, discardPile, activeColor, drawStack)) {
             socket.emit("invalidPlay");
             return;
+        }
+
+        // Apply color AFTER validation
+        if (card.color === "wild") {
+            if (!chosenColor) return; // must choose
+            activeColor = chosenColor;
+        } else {
+            activeColor = card.color;
         }
 
         hand.splice(index, 1);
         discardPile = card;
 
-        // 🏆 WIN CHECK
-        if (hand.length === 0) {
-            io.emit("gameOver", socket.id);
-            startGame();
-            return;
-        }
-
-
+        // Draw effects
         if (card.value === "+2") drawStack += 2;
         if (card.value === "+4") drawStack += 4;
         if (card.value === "+6") drawStack += 6;
         if (card.value === "+10") drawStack += 10;
-        if (card.value === "reverse") {
-            if (drawStack > 0) {
-                direction *= -1;
-                nextTurn();
-                nextTurn();
-                broadcast();
-                return;
-            }
-            direction *= -1;
-        }
+
+        if (card.value === "reverse") direction *= -1;
         if (card.value === "skip") nextTurn();
 
         nextTurn();
