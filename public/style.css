@@ -45,23 +45,29 @@ body {
 
 /* Card Styles */
 .card {
-  width: 60px;
-  height: 90px;
-  border-radius: 10px;
-  margin: 4px;
+  width: 70px;
+  height: 105px;
+  border-radius: 12px;
+  margin: 0;
   color: white;
   font-weight: bold;
-  font-size: 24px;
+  font-size: 26px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+  user-select: none;
 }
 
 .red { background: #e53935; }
 .blue { background: #1e88e5; }
 .green { background: #43a047; }
 .yellow { background: #fdd835; color: black; }
+.wild {
+  background: radial-gradient(circle, #000, #444);
+  color: white;
+}
 
 .card-back {
   width: 60px;
@@ -89,4 +95,45 @@ body {
   justify-content: center;
   align-items: center;
   font-weight: bold;
+}
+.pile.red { background: #e53935; }
+.pile.blue { background: #1e88e5; }
+.pile.green { background: #43a047; }
+.pile.yellow { background: #fdd835; color: black; }
+.pile.wild { background: #000; }
+#draw-pile {
+  cursor: pointer;
+  background: repeating-linear-gradient(
+    45deg,
+    #222,
+    #222 10px,
+    #333 10px,
+    #333 20px
+  );
+}
+
+/* PLAYER HAND (UNO STYLE) */
+.hand {
+  position: relative;
+  width: 600px;
+  height: 160px;
+  margin: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+.hand .card {
+  position: absolute;
+  bottom: 0;
+  transform-origin: bottom center;
+  transition: transform 0.2s ease, bottom 0.2s ease;
+  pointer-events: auto;
+}
+
+/* Hover effect */
+.hand .card:hover {
+  bottom: 20px;
+  z-index: 100;
 }

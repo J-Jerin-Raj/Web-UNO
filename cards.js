@@ -1,5 +1,5 @@
 const COLORS = ["red", "blue", "green", "yellow"];
-const VALUES = ["0","1","2","3","4","5","6","7","8","9","skip","reverse","+2"];
+const VALUES = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "+2"];
 
 function createDeck() {
   const deck = [];
@@ -29,7 +29,7 @@ function shuffle(deck) {
 
 function isValidPlay(card, topCard, drawStack) {
   if (drawStack > 0) {
-    return card.value === "+2" || card.value === "+4";
+    return ["+2", "+4", "skip", "reverse"].includes(card.value);
   }
 
   return (
