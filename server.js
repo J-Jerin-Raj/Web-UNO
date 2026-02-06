@@ -106,6 +106,8 @@ io.on("connection", socket => {
 
         if (card.value === "+2") drawStack += 2;
         if (card.value === "+4") drawStack += 4;
+        if (card.value === "+6") drawStack += 6;
+        if (card.value === "+10") drawStack += 10;
         if (card.value === "reverse") {
             if (drawStack > 0) {
                 direction *= -1;
