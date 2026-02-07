@@ -46,10 +46,14 @@ socket.on("gameState", state => {
 
   renderHand(myHand, isMyTurn);
   renderDiscard(state.discardPile);
+
+  drawPile.style.background =
+  "url(/cards/back.png) center/cover no-repeat";
+
   if (state.drawStack > 0) {
-    drawPile.innerText = `DRAW (${state.drawStack})`;
+    drawPile.innerHTML = `<span class="stack">${state.drawStack}</span>`;
   } else {
-    drawPile.innerText = "DRAW";
+    drawPile.innerHTML = "";
   }
 });
 
@@ -71,8 +75,8 @@ function renderHand(hand, isMyTurn) {
 
   hand.forEach((card, index) => {
     const div = document.createElement("div");
-    div.className = `card ${card.color}`;
-    div.innerText = card.value;
+    div.className = "card";
+    div.style.background = `url(${getCardImage(card)}) center/cover no-repeat`;
 
     const angle = startAngle + (spread / (total - 1 || 1)) * index;
     const offsetX = (index - total / 2) * 35;
@@ -101,16 +105,24 @@ function renderHand(hand, isMyTurn) {
 }
 
 function renderDiscard(card) {
-  if (!card) {
-    discardDiv.className = "pile";
-    discardDiv.innerText = "";
-    return;
-  }
+  if (!card) return;
 
-  discardDiv.className = `pile ${card.color}`;
-  discardDiv.innerText = card.value;
+  discardDiv.style.background =
+    `url(${getCardImage(card)}) center/cover no-repeat`;
 }
 
 drawPile.onclick = () => {
   socket.emit("drawCard");
 };
+
+function getCardImage(card) {
+    const color = card.color;
+    let value = card.value;
+
+    if (value.includes("+")) {
+        value = value.replace("+", "plus");
+    }
+    
+    const fileName = `${color}_${value}.png`;
+    return `/cards/${fileName}`;
+}
