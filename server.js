@@ -88,29 +88,32 @@ io.on("connection", socket => {
         // Validate play FIRST (wilds allowed)
         if (!isValidPlay(card, discardPile, activeColor, drawStack)) {
             socket.emit("invalidPlay");
-            return;
+            return; // Reject the play if invalid
         }
 
-        // Apply color AFTER validation
+        // Apply color AFTER validation if it's a wild card
         if (card.color === "wild") {
-            if (!chosenColor) return; // must choose
+            if (!chosenColor) return;  // Must choose color for wild
             activeColor = chosenColor;
         } else {
-            activeColor = card.color;
+            activeColor = card.color;  // Normal card, set active color to card's color
         }
 
+        // Remove the card from hand
         hand.splice(index, 1);
+
+        // Update discard pile
         discardPile = card;
 
-        // Draw effects
+        // Apply draw stack effects
         if (card.value === "+2") drawStack += 2;
         if (card.value === "+4") drawStack += 4;
         if (card.value === "+6") drawStack += 6;
         if (card.value === "+10") drawStack += 10;
-
         if (card.value === "reverse") direction *= -1;
         if (card.value === "skip") nextTurn();
 
+        // Proceed to the next turn
         nextTurn();
         broadcast();
     });
