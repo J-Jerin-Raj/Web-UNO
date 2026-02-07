@@ -41,8 +41,13 @@ function startGame() {
 }
 
 function nextTurn() {
-    currentTurn =
-        (currentTurn + direction + players.length) % players.length;
+    if (direction === 1) {
+        // Move to the next player (clockwise)
+        currentTurn = (currentTurn + 1) % players.length;
+    } else {
+        // Move to the previous player (counterclockwise)
+        currentTurn = (currentTurn - 1 + players.length) % players.length;
+    }
 }
 
 function broadcast() {
@@ -110,12 +115,24 @@ io.on("connection", socket => {
         if (card.value === "+4") drawStack += 4;
         if (card.value === "+6") drawStack += 6;
         if (card.value === "+10") drawStack += 10;
-        if (card.value === "reverse") direction *= -1;
+
+        // Special handling for Reverse card
+        if (card.value === "reverse") {
+            if (players.length === 2) {
+                // If there are only two players, skip the other player's turn
+                nextTurn();  // Skip the other player's turn (move to next player immediately)
+            } else {
+                // Normal behavior for Reverse: reverse the direction
+                direction *= -1;
+            }
+        }
+
+        // Apply other card effects (skip, reverse, etc.)
         if (card.value === "skip") nextTurn();
 
         // Proceed to the next turn
         nextTurn();
-        broadcast();
+        broadcast();  // Broadcast the game state to all players
     });
 
     socket.on("drawCard", () => {
