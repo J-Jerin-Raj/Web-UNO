@@ -30,39 +30,44 @@ function shuffle(deck) {
 }
 
 function isValidPlay(card, topCard, activeColor, drawStack) {
-  // Draw stack rules: Wild + cards (+4, +6, +10) can be placed on top of +2 or same type cards
-  if (drawStack > 0) {
-    // Allow Wild + cards (+4, +6, +10) to be played on top of +2
-    if (["+4", "+6", "+10"].includes(card.value) && topCard.value === "+2") {
-      return true;
+    // If there is a draw stack, allow draw cards (+2, +4, +6, +10) to stack correctly
+    if (drawStack > 0) {
+        // Allow +2 to be placed on another +2
+        if (card.value === "+2" && topCard.value === "+2") {
+            return true;
+        }
+
+        // Allow Wild + cards (+4, +6, +10) to be played on top of +2
+        if (["+4", "+6", "+10"].includes(card.value) && topCard.value === "+2") {
+            return true;
+        }
+
+        // Allow Wild + cards (+4, +6, +10) to be placed on top of each other (same type or lower value)
+        if (card.value === "+4" && (topCard.value === "+4" || topCard.value === "normal")) {
+            return true;
+        }
+        if (card.value === "+6" && (topCard.value === "+6" || topCard.value === "normal")) {
+            return true;
+        }
+        if (card.value === "+10" && (topCard.value === "+10" || topCard.value === "normal")) {
+            return true;
+        }
+
+        // Prevent placing +4 on top of +6 or +10, and +6 on top of +10
+        if ((card.value === "+4" && (topCard.value === "+6" || topCard.value === "+10")) ||
+            (card.value === "+6" && topCard.value === "+10")) {
+            return false;
+        }
+
+        // Otherwise, restrict Wild + cards from being placed on each other
+        return false;
     }
 
-    // Allow Wild + cards to be placed on top of each other (same type or lower)
-    if (card.value === "+4" && (topCard.value === "+4" || topCard.value === "normal")) {
-      return true;
-    }
-    if (card.value === "+6" && (topCard.value === "+6" || topCard.value === "normal")) {
-      return true;
-    }
-    if (card.value === "+10" && (topCard.value === "+10" || topCard.value === "normal")) {
-      return true;
-    }
+    // Wild cards are always playable
+    if (card.color === "wild") return true;
 
-    // Prevent placing +4 on top of +6 or +10, and +6 on top of +10
-    if ((card.value === "+4" && (topCard.value === "+6" || topCard.value === "+10")) ||
-      (card.value === "+6" && topCard.value === "+10")) {
-      return false;
-    }
-
-    // Otherwise, restrict Wild + cards from being placed on each other
-    return false;
-  }
-
-  // Wild cards are always playable
-  if (card.color === "wild") return true;
-
-  // Otherwise, match the active color or value
-  return card.color === activeColor || card.value === topCard.value;
+    // Otherwise, match the active color or value
+    return card.color === activeColor || card.value === topCard.value;
 }
 
 function dealHands(deck, players, cardsPerPlayer = 7) {
