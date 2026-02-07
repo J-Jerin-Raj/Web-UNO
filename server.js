@@ -139,13 +139,41 @@ io.on("connection", socket => {
         if (players[currentTurn] !== socket.id) return;
 
         const count = drawStack || 1;
+        let drawnCard = null;
+
+        // Draw the cards
         for (let i = 0; i < count; i++) {
-            if (deck.length === 0) return;
-            hands[socket.id].push(deck.pop()); // ✅ SAFE NOW
+            if (deck.length === 0) return;  // Exit if deck is empty
+            drawnCard = deck.pop();  // Get the last card from the deck
+            hands[socket.id].push(drawnCard);  // Add the card to the player's hand
         }
 
+        // Now check if the drawn card can be played
+        const hand = hands[socket.id];
+        const index = hand.indexOf(drawnCard);  // Find the index of the drawn card
+
+        // If the drawn card is valid to play, we simulate the click behavior
+        if (isValidPlay(drawnCard, discardPile, activeColor, drawStack)) {
+            // If it's a wild card, trigger the color picker
+            if (drawnCard.color === "wild") {
+                // Since it's a wild card, we need to ask for a color choice
+                io.to(socket.id).emit("wildCard", { index });
+            } else {
+                // It's a valid non-wild card, play it like a click
+                socket.emit("playCard", { index });
+                // Immediately move to the next turn since the card has been played
+                nextTurn();
+                return;  // Prevent going to next turn again
+            }
+        } else {
+            // If the card is not valid, proceed to the next turn
+            nextTurn();
+        }
+
+        // Reset the draw stack after drawing a card
         drawStack = 0;
-        nextTurn();
+
+        // Broadcast the updated game state
         broadcast();
     });
 

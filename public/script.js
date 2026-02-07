@@ -48,7 +48,7 @@ socket.on("gameState", state => {
   renderDiscard(state.discardPile);
 
   drawPile.style.background =
-  "url(/cards/back.png) center/cover no-repeat";
+    "url(/cards/back.png) center/cover no-repeat";
 
   if (state.drawStack > 0) {
     drawPile.innerHTML = `<span class="stack">${state.drawStack}</span>`;
@@ -111,18 +111,42 @@ function renderDiscard(card) {
     `url(${getCardImage(card)}) center/cover no-repeat`;
 }
 
+// Listen for the wildCard event from the server
+socket.on("wildCard", data => {
+    const { index } = data;  // Get the index of the drawn wild card
+    pendingWildIndex = index;  // Store the index of the pending wild card
+    colorPicker.classList.remove("d-none");  // Show the color picker for the player to select a color
+});
+
+// When the player selects a color for the wild card
+document.querySelectorAll(".colors button").forEach(btn => {
+    btn.onclick = () => {
+        const chosenColor = btn.dataset.color;  // Get the selected color
+        colorPicker.classList.add("d-none");  // Hide the color picker
+
+        // Emit the playCard event with the wild card index and the chosen color
+        socket.emit("playCard", {
+            index: pendingWildIndex,  // The index of the wild card
+            chosenColor  // The color chosen by the player
+        });
+
+        pendingWildIndex = null;  // Reset the pending wild card index
+    };
+});
+
+// Draw pile click handler
 drawPile.onclick = () => {
-  socket.emit("drawCard");
+    socket.emit("drawCard");
 };
 
 function getCardImage(card) {
-    const color = card.color;
-    let value = card.value;
+  const color = card.color;
+  let value = card.value;
 
-    if (value.includes("+")) {
-        value = value.replace("+", "plus");
-    }
-    
-    const fileName = `${color}_${value}.png`;
-    return `/cards/${fileName}`;
+  if (value.includes("+")) {
+    value = value.replace("+", "plus");
+  }
+
+  const fileName = `${color}_${value}.png`;
+  return `/cards/${fileName}`;
 }
