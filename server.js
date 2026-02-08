@@ -126,8 +126,10 @@ io.on("connection", socket => {
             activeColor = card.color;
         }
 
-        // Remove the card from hand
-        hand.splice(index, 1);
+        // Remove the card from hand ONLY if it was actually from the hand
+        if (index !== -1) {
+            hand.splice(index, 1);
+        }
 
         if (hand.length === 0) {
             io.emit("gameOver", socket.id);
