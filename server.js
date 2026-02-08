@@ -16,6 +16,7 @@ let players = [];
 let hands = {};
 let deck = [];
 let discardPile = null;
+let discardHistory = [];
 let currentTurn = 0;
 let direction = 1;
 let drawStack = 0;
@@ -30,6 +31,7 @@ function startGame() {
     // Ensure first discard is NOT wild +4
     do {
         discardPile = deck.pop();
+        discardHistory = [discardPile];
         activeColor = discardPile.color;
     } while (discardPile.color === "wild");
 
@@ -62,13 +64,12 @@ function broadcast() {
 }
 
 function refillDeckFromDiscard() {
-    if (!discardPile) return;
+    if (discardHistory.length <= 1) return;
 
-    const top = discardPile;
-    // Gather all remaining cards except the top discard
-    const allCards = Object.values(hands).flat();
-    deck = [...allCards];
-    discardPile = top;
+    const topCard = discardHistory.pop(); // keep top discard
+    deck = shuffle(discardHistory);       // shuffle old discards
+    discardHistory = [topCard];           // reset history
+    discardPile = topCard;
 }
 
 /* ---------- SOCKET ---------- */
@@ -144,6 +145,7 @@ io.on("connection", socket => {
 
         // Update discard pile
         discardPile = card;
+        discardHistory.push(card);
 
         // Apply draw stack effects
         if (card.value === "+2") drawStack += 2;
