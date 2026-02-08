@@ -106,21 +106,43 @@ function renderHand(hand, isMyTurn) {
   handDiv.style.filter = isMyTurn ? "drop-shadow(0 0 15px gold)" : "none";
 
   const total = hand.length;
-  const spread = Math.min(15, total * 3); // fan width
+  const spread = Math.min(15, total * 3);
   const startAngle = -spread / 2;
+
+  // 🔥 NEW
+  const MAX_HAND_WIDTH = 520;
+  const CARD_WIDTH = 85;
+  const MIN_SPACING = 14;
+  const MAX_SPACING = 38;
+
+  const spacing =
+    total <= 1
+      ? 0
+      : Math.min(
+          MAX_SPACING,
+          Math.max(
+            MIN_SPACING,
+            (MAX_HAND_WIDTH - CARD_WIDTH) / (total - 1)
+          )
+        );
 
   hand.forEach((card, index) => {
     const div = document.createElement("div");
     div.className = "card";
     div.style.background = `url(${getCardImage(card)}) center/cover no-repeat`;
 
-    const angle = startAngle + (spread / (total - 1 || 1)) * index;
-    const offsetX = (index - total / 2) * 35;
+    const angle =
+      total === 1
+        ? 0
+        : startAngle + (spread / (total - 1)) * index;
+
+    const offsetX = (index - (total - 1) / 2) * spacing;
 
     div.style.transform = `
       translateX(${offsetX}px)
       rotate(${angle}deg)
     `;
+
     div.style.zIndex = index;
 
     if (isMyTurn) {
