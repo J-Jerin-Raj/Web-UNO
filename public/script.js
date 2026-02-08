@@ -14,20 +14,34 @@ const handDiv = document.getElementById("hand");
 const discardDiv = document.getElementById("discard-pile");
 const drawPile = document.getElementById("draw-pile");
 const colorPicker = document.getElementById("colorPicker");
-let pendingWildIndex = null;
+
+let pendingWildIndex = null;  // for wild from HAND
+let pendingWildCard = null;   // for wild from DRAW
 
 document.querySelectorAll(".colors button").forEach(btn => {
   btn.onclick = () => {
     const chosenColor = btn.dataset.color;
     colorPicker.classList.add("d-none");
 
-    socket.emit("playCard", {
-      index: -1,          // tells server: "this is drawn card"
-      drawnCard: pendingWildCard,
-      chosenColor
-    });
+    // Case 1: Wild was drawn from deck
+    if (pendingWildCard) {
+      socket.emit("playCard", {
+        index: -1,
+        drawnCard: pendingWildCard,
+        chosenColor
+      });
+      pendingWildCard = null;
+      return;
+    }
 
-    pendingWildCard = null;
+    // Case 2: Wild was played from HAND
+    if (pendingWildIndex !== null) {
+      socket.emit("playCard", {
+        index: pendingWildIndex,
+        chosenColor
+      });
+      pendingWildIndex = null;
+    }
   };
 });
 
@@ -81,7 +95,6 @@ socket.on("wildCard", data => {
   // Show color picker
   colorPicker.classList.remove("d-none");
 });
-
 
 function renderHand(hand, isMyTurn) {
   handDiv.innerHTML = "";

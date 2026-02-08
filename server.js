@@ -97,30 +97,33 @@ io.on("connection", socket => {
 
         const { index, chosenColor } = data;
         const hand = hands[socket.id];
-let card;
+        let card;
 
-if (index === -1 && data.drawnCard) {
-  // This is a forced-play drawn card (wild case)
-  card = data.drawnCard;
-} else {
-  card = hand[index];
-}
+        if (index === -1 && data.drawnCard) {
+            // This is a forced-play drawn card (wild case)
+            card = data.drawnCard;
+        } else {
+            card = hand[index];
+        }
 
-if (!card) return;
-
+        if (!card) return;
 
         // Validate play FIRST (wilds allowed)
         if (!isValidPlay(card, discardPile, activeColor, drawStack)) {
             socket.emit("invalidPlay");
-            return; // Reject the play if invalid
+            return;
         }
 
-        // Apply color AFTER validation if it's a wild card
+        // ---- FIX: Proper Wild Handling (from HAND or DRAW) ----
         if (card.color === "wild") {
-            if (!chosenColor) return;  // Must choose color for wild
+            // If player hasn't chosen a color yet → ask for one
+            if (!chosenColor) {
+                socket.emit("wildCard", { index });
+                return;
+            }
             activeColor = chosenColor;
         } else {
-            activeColor = card.color;  // Normal card, set active color to card's color
+            activeColor = card.color;
         }
 
         // Remove the card from hand
@@ -160,69 +163,68 @@ if (!card) return;
     });
 
     socket.on("drawCard", () => {
-  if (players[currentTurn] !== socket.id) return;
+        if (players[currentTurn] !== socket.id) return;
 
-  const count = drawStack || 1;
+        const count = drawStack || 1;
 
-  // ----- MULTI-DRAW (stacked + cards) -----
-  if (count > 1) {
-    for (let i = 0; i < count; i++) {
-      if (deck.length === 0) refillDeckFromDiscard();
-      if (deck.length === 0) return;
-      hands[socket.id].push(deck.pop());
-    }
+        // ----- MULTI-DRAW (stacked + cards) -----
+        if (count > 1) {
+            for (let i = 0; i < count; i++) {
+                if (deck.length === 0) refillDeckFromDiscard();
+                if (deck.length === 0) return;
+                hands[socket.id].push(deck.pop());
+            }
 
-    drawStack = 0;
-    nextTurn();
-    broadcast();
-    return;
-  }
+            drawStack = 0;
+            nextTurn();
+            broadcast();
+            return;
+        }
 
-  // ----- SINGLE DRAW -----
-  if (deck.length === 0) refillDeckFromDiscard();
-  if (deck.length === 0) return;
+        // ----- SINGLE DRAW -----
+        if (deck.length === 0) refillDeckFromDiscard();
+        if (deck.length === 0) return;
 
-  const drawnCard = deck.pop();
-  drawStack = 0;
+        const drawnCard = deck.pop();
+        drawStack = 0;
 
-  // Check if playable
-  const playable = isValidPlay(drawnCard, discardPile, activeColor, drawStack);
+        // Check if playable
+        const playable = isValidPlay(drawnCard, discardPile, activeColor, drawStack);
 
-  if (!playable) {
-    // ❌ Not playable → goes to hand
-    hands[socket.id].push(drawnCard);
-    nextTurn();
-    broadcast();
-    return;
-  }
+        if (!playable) {
+            // ❌ Not playable → goes to hand
+            hands[socket.id].push(drawnCard);
+            nextTurn();
+            broadcast();
+            return;
+        }
 
-  // ✅ Playable card
-  if (drawnCard.color === "wild") {
-    // Ask client to choose color instead of auto-playing
-    socket.emit("wildCard", { drawnCard });
-    return;
-  }
+        // ✅ Playable card
+        if (drawnCard.color === "wild") {
+            // Ask client to choose color instead of auto-playing
+            socket.emit("wildCard", { drawnCard });
+            return;
+        }
 
-  // ✅ Auto-play normal playable card
-  discardPile = drawnCard;
-  activeColor = drawnCard.color;
+        // ✅ Auto-play normal playable card
+        discardPile = drawnCard;
+        activeColor = drawnCard.color;
 
-  if (drawnCard.value === "+2") drawStack += 2;
-  if (drawnCard.value === "+4") drawStack += 4;
-  if (drawnCard.value === "+6") drawStack += 6;
-  if (drawnCard.value === "+10") drawStack += 10;
+        if (drawnCard.value === "+2") drawStack += 2;
+        if (drawnCard.value === "+4") drawStack += 4;
+        if (drawnCard.value === "+6") drawStack += 6;
+        if (drawnCard.value === "+10") drawStack += 10;
 
-  if (drawnCard.value === "reverse") {
-    if (players.length === 2) nextTurn();
-    else direction *= -1;
-  }
+        if (drawnCard.value === "reverse") {
+            if (players.length === 2) nextTurn();
+            else direction *= -1;
+        }
 
-  if (drawnCard.value === "skip") nextTurn();
+        if (drawnCard.value === "skip") nextTurn();
 
-  nextTurn();
-  broadcast();
-});
-
+        nextTurn();
+        broadcast();
+    });
 
     socket.on("disconnect", () => {
         const i = players.indexOf(socket.id);
