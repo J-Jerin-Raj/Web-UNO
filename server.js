@@ -61,6 +61,16 @@ function broadcast() {
     });
 }
 
+function refillDeckFromDiscard() {
+    if (!discardPile) return;
+
+    const top = discardPile;
+    // Gather all remaining cards except the top discard
+    const allCards = Object.values(hands).flat();
+    deck = [...allCards];
+    discardPile = top;
+}
+
 /* ---------- SOCKET ---------- */
 
 io.on("connection", socket => {
@@ -87,8 +97,17 @@ io.on("connection", socket => {
 
         const { index, chosenColor } = data;
         const hand = hands[socket.id];
-        const card = hand[index];
-        if (!card) return;
+let card;
+
+if (index === -1 && data.drawnCard) {
+  // This is a forced-play drawn card (wild case)
+  card = data.drawnCard;
+} else {
+  card = hand[index];
+}
+
+if (!card) return;
+
 
         // Validate play FIRST (wilds allowed)
         if (!isValidPlay(card, discardPile, activeColor, drawStack)) {
@@ -106,6 +125,11 @@ io.on("connection", socket => {
 
         // Remove the card from hand
         hand.splice(index, 1);
+
+        if (hand.length === 0) {
+            io.emit("gameOver", socket.id);
+            return;
+        }
 
         // Update discard pile
         discardPile = card;
@@ -136,46 +160,69 @@ io.on("connection", socket => {
     });
 
     socket.on("drawCard", () => {
-        if (players[currentTurn] !== socket.id) return;
+  if (players[currentTurn] !== socket.id) return;
 
-        const count = drawStack || 1;
-        let drawnCard = null;
+  const count = drawStack || 1;
 
-        // Draw the cards
-        for (let i = 0; i < count; i++) {
-            if (deck.length === 0) return;  // Exit if deck is empty
-            drawnCard = deck.pop();  // Get the last card from the deck
-            hands[socket.id].push(drawnCard);  // Add the card to the player's hand
-        }
+  // ----- MULTI-DRAW (stacked + cards) -----
+  if (count > 1) {
+    for (let i = 0; i < count; i++) {
+      if (deck.length === 0) refillDeckFromDiscard();
+      if (deck.length === 0) return;
+      hands[socket.id].push(deck.pop());
+    }
 
-        // Now check if the drawn card can be played
-        const hand = hands[socket.id];
-        const index = hand.indexOf(drawnCard);  // Find the index of the drawn card
+    drawStack = 0;
+    nextTurn();
+    broadcast();
+    return;
+  }
 
-        // If the drawn card is valid to play, we simulate the click behavior
-        if (isValidPlay(drawnCard, discardPile, activeColor, drawStack)) {
-            // If it's a wild card, trigger the color picker
-            if (drawnCard.color === "wild") {
-                // Since it's a wild card, we need to ask for a color choice
-                io.to(socket.id).emit("wildCard", { index });
-            } else {
-                // It's a valid non-wild card, play it like a click
-                socket.emit("playCard", { index });
-                // Immediately move to the next turn since the card has been played
-                nextTurn();
-                return;  // Prevent going to next turn again
-            }
-        } else {
-            // If the card is not valid, proceed to the next turn
-            nextTurn();
-        }
+  // ----- SINGLE DRAW -----
+  if (deck.length === 0) refillDeckFromDiscard();
+  if (deck.length === 0) return;
 
-        // Reset the draw stack after drawing a card
-        drawStack = 0;
+  const drawnCard = deck.pop();
+  drawStack = 0;
 
-        // Broadcast the updated game state
-        broadcast();
-    });
+  // Check if playable
+  const playable = isValidPlay(drawnCard, discardPile, activeColor, drawStack);
+
+  if (!playable) {
+    // ❌ Not playable → goes to hand
+    hands[socket.id].push(drawnCard);
+    nextTurn();
+    broadcast();
+    return;
+  }
+
+  // ✅ Playable card
+  if (drawnCard.color === "wild") {
+    // Ask client to choose color instead of auto-playing
+    socket.emit("wildCard", { drawnCard });
+    return;
+  }
+
+  // ✅ Auto-play normal playable card
+  discardPile = drawnCard;
+  activeColor = drawnCard.color;
+
+  if (drawnCard.value === "+2") drawStack += 2;
+  if (drawnCard.value === "+4") drawStack += 4;
+  if (drawnCard.value === "+6") drawStack += 6;
+  if (drawnCard.value === "+10") drawStack += 10;
+
+  if (drawnCard.value === "reverse") {
+    if (players.length === 2) nextTurn();
+    else direction *= -1;
+  }
+
+  if (drawnCard.value === "skip") nextTurn();
+
+  nextTurn();
+  broadcast();
+});
+
 
     socket.on("disconnect", () => {
         const i = players.indexOf(socket.id);

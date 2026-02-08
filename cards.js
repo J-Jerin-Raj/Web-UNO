@@ -32,27 +32,18 @@ function shuffle(deck) {
 function isValidPlay(card, topCard, activeColor, drawStack) {
 
   if (drawStack > 0) {
-    //+2
-    if (["+2", "+4", "+6", "+10"].includes(card.value) && topCard.value === "+2") {
-      return true;
-    }
-    //+4
-    if (["+4", "+6", "+10"].includes(card.value) && topCard.value === "+4") {
-      return true;
-    }
-    //+6
-    if (["+6", "+10"].includes(card.value) && topCard.value === "+6") {
-      return true;
-    }
-    //+10
-    if (["+10"].includes(card.value) && topCard.value === "+10") {
-      return true;
-    }
-    return false;
+    const order = { "+2": 2, "+4": 4, "+6": 6, "+10": 10 };
+
+    if (!order[card.value] || !order[topCard.value]) return false;
+
+    // Must be equal or higher
+    return order[card.value] >= order[topCard.value];
   }
 
+  // Wild is always playable
   if (card.color === "wild") return true;
 
+  // Normal UNO rule
   return card.color === activeColor || card.value === topCard.value;
 }
 

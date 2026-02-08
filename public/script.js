@@ -22,11 +22,12 @@ document.querySelectorAll(".colors button").forEach(btn => {
     colorPicker.classList.add("d-none");
 
     socket.emit("playCard", {
-      index: pendingWildIndex,
+      index: -1,          // tells server: "this is drawn card"
+      drawnCard: pendingWildCard,
       chosenColor
     });
 
-    pendingWildIndex = null;
+    pendingWildCard = null;
   };
 });
 
@@ -36,10 +37,12 @@ socket.on("playerData", data => {
 });
 
 socket.on("gameState", state => {
-  if (!myId) return;
+  if (!myId || !state.players || !state.hands) return;
+
   if (!state.hands || !state.hands[myId]) return;
 
-  discardDiv.className = `pile ${state.activeColor}`;
+  discardDiv.className = "pile";
+  discardDiv.classList.add(state.activeColor);
 
   const myHand = state.hands[myId];
   const isMyTurn = state.players[state.currentTurn] === myId;
@@ -64,6 +67,21 @@ socket.on("gameOver", winnerId => {
     alert("💀 You lost");
   }
 });
+
+socket.on("invalidPlay", () => {
+  alert("❌ Invalid move!");
+});
+
+socket.on("wildCard", data => {
+  const { drawnCard } = data;
+
+  // Store the card temporarily
+  pendingWildCard = drawnCard;
+
+  // Show color picker
+  colorPicker.classList.remove("d-none");
+});
+
 
 function renderHand(hand, isMyTurn) {
   handDiv.innerHTML = "";
@@ -111,32 +129,8 @@ function renderDiscard(card) {
     `url(${getCardImage(card)}) center/cover no-repeat`;
 }
 
-// Listen for the wildCard event from the server
-socket.on("wildCard", data => {
-    const { index } = data;  // Get the index of the drawn wild card
-    pendingWildIndex = index;  // Store the index of the pending wild card
-    colorPicker.classList.remove("d-none");  // Show the color picker for the player to select a color
-});
-
-// When the player selects a color for the wild card
-document.querySelectorAll(".colors button").forEach(btn => {
-    btn.onclick = () => {
-        const chosenColor = btn.dataset.color;  // Get the selected color
-        colorPicker.classList.add("d-none");  // Hide the color picker
-
-        // Emit the playCard event with the wild card index and the chosen color
-        socket.emit("playCard", {
-            index: pendingWildIndex,  // The index of the wild card
-            chosenColor  // The color chosen by the player
-        });
-
-        pendingWildIndex = null;  // Reset the pending wild card index
-    };
-});
-
-// Draw pile click handler
 drawPile.onclick = () => {
-    socket.emit("drawCard");
+  socket.emit("drawCard");
 };
 
 function getCardImage(card) {
