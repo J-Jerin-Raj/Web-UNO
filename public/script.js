@@ -152,13 +152,19 @@ drawPile.onclick = () => {
 };
 
 function getCardImage(card) {
-  const color = card.color;
-  let value = card.value;
+  let color = card.color; // usually "red", "blue", "green", "yellow" or "wild"
+  let value = card.value; // "wild", "+4", "+6", "+10", etc.
 
   if (value.includes("+")) {
-    value = value.replace("+", "plus");
+    value = value.replace("+", "plus"); // "+4" -> "plus4"
   }
 
-  const fileName = `${color}_${value}.png`;
-  return `/cards/${fileName}`;
+  if (card.color === "wild" && card.chosenColor) {
+    // 🔥 YOUR REQUESTED FORMAT:
+    // wild_plus4_blue.png
+    return `/cards/wild_${value}_${card.chosenColor}.png`;
+  }
+
+  // Normal cards: red_5.png, blue_skip.png, etc.
+  return `/cards/${color}_${value}.png`;
 }

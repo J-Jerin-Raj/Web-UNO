@@ -114,13 +114,19 @@ io.on("connection", socket => {
             return;
         }
 
-        // ---- FIX: Proper Wild Handling (from HAND or DRAW) ----
+        // ---- NEW: Proper Wild Handling + recolor the card ----
         if (card.color === "wild") {
-            // If player hasn't chosen a color yet → ask for one
             if (!chosenColor) {
-                socket.emit("wildCard", { index });
+                socket.emit("wildCard", { drawnCard: card, index });
                 return;
             }
+
+            // 🔥 IMPORTANT CHANGE: attach chosen color to the card itself
+            card = {
+                ...card,
+                chosenColor: chosenColor
+            };
+
             activeColor = chosenColor;
         } else {
             activeColor = card.color;
@@ -203,8 +209,8 @@ io.on("connection", socket => {
 
         // ✅ Playable card
         if (drawnCard.color === "wild") {
-            // Ask client to choose color instead of auto-playing
-            socket.emit("wildCard", { drawnCard });
+            // Ask client to choose color for THIS drawn card
+            socket.emit("wildCard", { drawnCard, fromDraw: true });
             return;
         }
 
