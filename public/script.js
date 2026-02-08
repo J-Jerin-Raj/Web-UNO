@@ -1,5 +1,6 @@
 const menu = document.getElementById("menu");
 const startBtn = document.getElementById("startBtn");
+const currentColorText = document.getElementById("current-color-text");
 
 startBtn.onclick = () => {
   menu.style.display = "none";
@@ -57,6 +58,10 @@ socket.on("gameState", state => {
 
   discardDiv.className = "pile";
   discardDiv.classList.add(state.activeColor);
+
+  // 👉 ADD THIS LINE:
+  currentColorText.textContent = state.activeColor ? state.activeColor.toUpperCase() : "—";
+
 
   const myHand = state.hands[myId];
   const isMyTurn = state.players[state.currentTurn] === myId;
