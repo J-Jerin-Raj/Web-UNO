@@ -61,5 +61,6 @@ function dealHands(deck, players, cardsPerPlayer = 7) {
 module.exports = {
   createDeck,
   isValidPlay,
-  dealHands
+  dealHands,
+  shuffle
 };
