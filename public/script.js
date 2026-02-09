@@ -119,12 +119,12 @@ function renderHand(hand, isMyTurn) {
     total <= 1
       ? 0
       : Math.min(
-          MAX_SPACING,
-          Math.max(
-            MIN_SPACING,
-            (MAX_HAND_WIDTH - CARD_WIDTH) / (total - 1)
-          )
-        );
+        MAX_SPACING,
+        Math.max(
+          MIN_SPACING,
+          (MAX_HAND_WIDTH - CARD_WIDTH) / (total - 1)
+        )
+      );
 
   hand.forEach((card, index) => {
     const div = document.createElement("div");
@@ -151,7 +151,13 @@ function renderHand(hand, isMyTurn) {
           pendingWildIndex = index;
           colorPicker.classList.remove("d-none");
         } else {
-          socket.emit("playCard", { index });
+          const discardEl = document.getElementById("discard-pile");
+
+          animateCardFly(div, discardEl, getCardImage(card));
+
+          setTimeout(() => {
+            socket.emit("playCard", { index });
+          }, 150);
         }
       };
     } else {
@@ -162,6 +168,90 @@ function renderHand(hand, isMyTurn) {
   });
 }
 
+function animateCardFly(fromEl, toEl, imageUrl) {
+  if (!fromEl || !toEl) return;
+
+  const fromRect = fromEl.getBoundingClientRect();
+  const toRect = toEl.getBoundingClientRect();
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.background = `url(${imageUrl}) center/cover no-repeat`;
+  card.style.position = "fixed";
+  card.style.left = `${fromRect.left}px`;
+  card.style.top = `${fromRect.top}px`;
+  card.style.zIndex = 9999;
+  card.style.pointerEvents = "none";
+
+  document.body.appendChild(card);
+
+  card.animate(
+    [
+      {
+        transform: "scale(1) rotate(0deg)",
+        left: `${fromRect.left}px`,
+        top: `${fromRect.top}px`
+      },
+      {
+        transform: "scale(1.2) rotate(180deg)",
+        left: `${toRect.left}px`,
+        top: `${toRect.top}px`
+      }
+    ],
+    {
+      duration: 400,
+      easing: "cubic-bezier(0.25, 0.8, 0.25, 1)"
+    }
+  );
+
+  setTimeout(() => card.remove(), 400);
+}
+
+function animateDrawToHand(drawPileEl, imageUrl) {
+  if (!drawPileEl) return;
+
+  const fromRect = drawPileEl.getBoundingClientRect();
+  const handRect = handDiv.getBoundingClientRect();
+
+  const cardWidth = 80;      // match your .card width
+  const spacing = 35;       // same spacing as renderHand
+
+  const cardCount = handDiv.children.length;
+
+  // RIGHT end of hand
+  const targetX =
+    handRect.left +
+    handRect.width / 2 +
+    (cardCount - 1) * spacing;
+
+  const targetY =
+    handRect.top + handRect.height / 2 - 40;
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.style.background = `url(${imageUrl}) center/cover no-repeat`;
+  card.style.position = "fixed";
+  card.style.left = `${fromRect.left}px`;
+  card.style.top = `${fromRect.top}px`;
+  card.style.zIndex = 9999;
+  card.style.pointerEvents = "none";
+
+  document.body.appendChild(card);
+
+  card.animate(
+    [
+      { transform: "scale(0.9)", left: `${fromRect.left}px`, top: `${fromRect.top}px` },
+      { transform: "scale(1)", left: `${targetX}px`, top: `${targetY}px` }
+    ],
+    {
+      duration: 350,
+      easing: "ease-out"
+    }
+  );
+
+  setTimeout(() => card.remove(), 350);
+}
+
 function renderDiscard(card) {
   if (!card) return;
 
@@ -170,6 +260,7 @@ function renderDiscard(card) {
 }
 
 drawPile.onclick = () => {
+  animateDrawToHand(drawPile, "/cards/back.png");
   socket.emit("drawCard");
 };
 
