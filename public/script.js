@@ -10,6 +10,7 @@ const socket = io();
 
 let myId = null;
 let myIndex = null;
+let currentDrawStack = 0;
 
 const handDiv = document.getElementById("hand");
 const discardDiv = document.getElementById("discard-pile");
@@ -55,6 +56,8 @@ socket.on("gameState", state => {
   if (!myId || !state.players || !state.hands) return;
 
   if (!state.hands || !state.hands[myId]) return;
+
+  currentDrawStack = state.drawStack;
 
   discardDiv.className = "pile";
   discardDiv.classList.add(state.activeColor);
@@ -249,8 +252,25 @@ function animateDrawToHand(drawPileEl, imageUrl) {
     }
   );
 
-  setTimeout(() => card.remove(), 350);
+  setTimeout(() => card.remove(), 550);
 }
+
+function animateMultipleDraws(count) {
+  const delayBetweenCards = 180;
+
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      animateDrawToHand(drawPile, "/cards/back.png");
+    }, i * delayBetweenCards);
+  }
+}
+
+drawPile.onclick = () => {
+  const count = Math.max(1, currentDrawStack || 1);
+  
+  animateMultipleDraws(count);
+  socket.emit("drawCard");
+};
 
 function renderDiscard(card) {
   if (!card) return;
@@ -258,11 +278,6 @@ function renderDiscard(card) {
   discardDiv.style.background =
     `url(${getCardImage(card)}) center/cover no-repeat`;
 }
-
-drawPile.onclick = () => {
-  animateDrawToHand(drawPile, "/cards/back.png");
-  socket.emit("drawCard");
-};
 
 function getCardImage(card) {
   let color = card.color; // usually "red", "blue", "green", "yellow" or "wild"
