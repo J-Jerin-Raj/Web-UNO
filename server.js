@@ -179,14 +179,14 @@ io.on("connection", socket => {
 
         // ----- MULTI-DRAW (stacked + cards) -----
         if (count > 1) {
-            for (let i = 0; i < count; i++) {
-                if (deck.length === 0) refillDeckFromDiscard();
-                if (deck.length === 0) return;
-                hands[socket.id].push(deck.pop());
-            }
+            if (deck.length === 0) refillDeckFromDiscard();
+            if (deck.length === 0) return;
+            hands[socket.id].push(deck.pop());
 
-            drawStack = 0;
-            nextTurn();
+            drawStack -= 1;
+            if (drawStack == 0){
+                nextTurn();
+            }
             broadcast();
             return;
         }

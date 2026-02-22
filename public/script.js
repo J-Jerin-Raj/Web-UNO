@@ -256,20 +256,19 @@ function animateDrawToHand(drawPileEl, imageUrl) {
 }
 
 function animateMultipleDraws(count) {
-  const delayBetweenCards = 180;
+  const delayBetweenCards = 500;
 
   for (let i = 0; i < count; i++) {
     setTimeout(() => {
       animateDrawToHand(drawPile, "/cards/back.png");
+      socket.emit("drawCard");
     }, i * delayBetweenCards);
   }
 }
 
 drawPile.onclick = () => {
   const count = Math.max(1, currentDrawStack || 1);
-  
   animateMultipleDraws(count);
-  socket.emit("drawCard");
 };
 
 function renderDiscard(card) {
