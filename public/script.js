@@ -252,7 +252,7 @@ function animateDrawToHand(drawPileEl, imageUrl) {
     }
   );
 
-  setTimeout(() => card.remove(), 550);
+  setTimeout(() => card.remove(), 350);
 }
 
 function animateMultipleDraws(count) {
