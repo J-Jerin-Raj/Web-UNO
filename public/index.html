@@ -12,11 +12,32 @@
 
 <body>
 
-  <div id="menu" class="menu">
-    <h1 class="text-white mb-4">UNO NO MERCY</h1>
-    <button id="startBtn" class="btn btn-lg btn-danger">
-      Start Game
-    </button>
+  <div id="menu" class="menu-screen active">
+
+    <div class="menu-content">
+      <h1 class="game-title">UNO NO MERCY</h1>
+
+      <div id="lobbySection">
+        <p class="player-counter">
+          Players: <span id="playerCount">0</span>
+        </p>
+
+        <button id="startBtn" class="menu-btn" disabled>
+          Waiting for Players...
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="winScreen" class="menu-screen hidden">
+    <div class="menu-content">
+      <h1 id="winTitle" class="win-title"></h1>
+
+      <button id="playAgainBtn" class="menu-btn">
+        Play Again
+      </button>
+    </div>
   </div>
 
   <div id="colorPicker" class="color-picker d-none">

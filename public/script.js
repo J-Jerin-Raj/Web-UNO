@@ -1,6 +1,11 @@
 const menu = document.getElementById("menu");
 const startBtn = document.getElementById("startBtn");
 const currentColorText = document.getElementById("current-color-text");
+const menuScreen = document.getElementById("menuScreen");
+const winScreen = document.getElementById("winScreen");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const playerCountSpan = document.getElementById("playerCount");
+const winTitle = document.getElementById("winTitle");
 
 startBtn.onclick = () => {
   menu.style.display = "none";
@@ -82,13 +87,59 @@ socket.on("gameState", state => {
   }
 });
 
-socket.on("gameOver", winnerId => {
-  if (winnerId === myId) {
-    alert("🔥 YOU WIN 🔥");
-  } else {
-    alert("💀 You lost");
+socket.on("playerCount", count => {
+  playerCountSpan.textContent = count;
+
+  if (count === 2) {
+    startBtn.disabled = false;
+    startBtn.textContent = "Start Game";
   }
 });
+
+socket.on("gameOver", winnerId => {
+
+  if (winnerId === myId) {
+    winTitle.textContent = "🔥 YOU WIN 🔥";
+    winTitle.style.color = "gold";
+    launchConfetti();
+  } else {
+    winTitle.textContent = "💀 YOU LOST";
+    winTitle.style.color = "red";
+  }
+
+  winScreen.classList.remove("hidden");
+});
+
+function launchConfetti() {
+  for (let i = 0; i < 120; i++) {
+    const confetti = document.createElement("div");
+    confetti.style.position = "fixed";
+    confetti.style.width = "6px";
+    confetti.style.height = "6px";
+    confetti.style.background =
+      `hsl(${Math.random()*360},100%,50%)`;
+    confetti.style.left = Math.random()*100+"vw";
+    confetti.style.top = "-10px";
+    confetti.style.zIndex = 9999;
+
+    document.body.appendChild(confetti);
+
+    confetti.animate(
+      [
+        { transform: "translateY(0px)" },
+        { transform: "translateY(100vh)" }
+      ],
+      { duration: 2000 + Math.random()*1000 }
+    );
+
+    setTimeout(()=>confetti.remove(),3000);
+  }
+}
+
+playAgainBtn.onclick = () => {
+  socket.emit("playAgain");
+  winScreen.classList.add("hidden");
+};
 
 socket.on("invalidPlay", () => {
   alert("❌ Invalid move!");

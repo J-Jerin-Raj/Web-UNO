@@ -86,6 +86,7 @@ io.on("connection", socket => {
         index: players.length - 1
     });
 
+    io.emit("playerCount", players.length);
     // Start game when 2+ players
     if (players.length >= 2 && deck.length === 0) {
         startGame();

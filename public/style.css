@@ -162,6 +162,88 @@ body {
   z-index: 9999;
 }
 
+/* ========================= */
+/* MENU SYSTEM */
+/* ========================= */
+
+.menu-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #111 0%, #000 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.menu-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.05);
+}
+
+.menu-content {
+  text-align: center;
+  color: white;
+  animation: fadeSlide 1s ease;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.game-title {
+  font-size: 64px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  background: linear-gradient(45deg, red, yellow);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 40px;
+  animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px red; }
+  to { text-shadow: 0 0 30px orange; }
+}
+
+.player-counter {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.menu-btn {
+  padding: 14px 40px;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(45deg, #ff1744, #ff9100);
+  color: white;
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menu-btn:hover:not(:disabled) {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(255, 0, 0, 0.5);
+}
+
+.menu-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.win-title {
+  font-size: 60px;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
 .color-picker {
   position: fixed;
   inset: 0;
