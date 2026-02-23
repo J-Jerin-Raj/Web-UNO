@@ -172,7 +172,7 @@ io.on("connection", socket => {
         nextTurn();
         broadcast();  // Broadcast the game state to all players
     });
-
+    let MultiDraw = false;
     socket.on("drawCard", () => {
         if (players[currentTurn] !== socket.id) return;
 
@@ -183,7 +183,7 @@ io.on("connection", socket => {
             if (deck.length === 0) refillDeckFromDiscard();
             if (deck.length === 0) return;
             hands[socket.id].push(deck.pop());
-
+            MultiDraw = true;
             drawStack -= 1;
             if (drawStack == 0){
                 nextTurn();
@@ -202,8 +202,11 @@ io.on("connection", socket => {
         // Check if playable
         const playable = isValidPlay(drawnCard, discardPile, activeColor, drawStack);
 
-        if (!playable) {
+        if (!playable || MultiDraw) {
             // ❌ Not playable → goes to hand
+            if (count === 1){
+                MultiDraw = false;
+            }
             hands[socket.id].push(drawnCard);
             nextTurn();
             broadcast();
