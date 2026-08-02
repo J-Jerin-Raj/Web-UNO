@@ -120,6 +120,25 @@ function refillDeckFromDiscard() {
     discardPile = topCard;
 }
 
+function resetGame() {
+
+    deck = [];
+
+    hands = {
+        0: [],
+        1: []
+    };
+
+    discardPile = null;
+    discardHistory = [];
+    currentTurn = 0;
+    direction = 1;
+    drawStack = 0;
+    activeColor = null;
+
+    saveGame();
+}
+
 if (fs.existsSync("./data.json")) {
 
     const data = JSON.parse(
@@ -147,10 +166,26 @@ if (fs.existsSync("./data.json")) {
         p.socketId = null;
     });
 
-    hands = data.hands || {
-        0: [],
-        1: []
-    };
+    if (data.discardPile === null) {
+
+        // Previous game ended
+        hands = {
+            0: [],
+            1: []
+        };
+
+        deck = [];
+
+    }
+    else {
+
+        hands = data.hands || {
+            0: [],
+            1: []
+        };
+
+        deck = data.deck || [];
+    }
     deck = data.deck || [];
     discardPile = data.discardPile;
     discardHistory = data.discardHistory || [];
@@ -249,7 +284,7 @@ io.on("connection", socket => {
 
         if (hand.length === 0) {
             io.emit("gameOver", socket.seat);
-            saveGame();
+            resetGame();
             return;
         }
 
@@ -355,6 +390,18 @@ io.on("connection", socket => {
         nextTurn();
         broadcast();
         saveGame();
+    });
+
+    socket.on("playAgain", () => {
+
+        const count = players.filter(
+            p => p.connected
+        ).length;
+
+        if (count === 2) {
+            startGame();
+        }
+
     });
 
     socket.on("disconnect", () => {
