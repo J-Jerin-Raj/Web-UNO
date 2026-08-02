@@ -57,6 +57,23 @@ socket.on("playerData", data => {
   myIndex = data.index;
 });
 
+socket.on("roomFull", () => {
+    document.body.innerHTML = `
+        <div style="
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:#111;
+            color:white;
+            font-size:42px;
+            font-family:sans-serif;
+        ">
+            🚫 Room Full
+        </div>
+    `;
+});
+
 socket.on("gameState", state => {
   if (!myId || !state.players || !state.hands) return;
 

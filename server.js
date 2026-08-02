@@ -75,6 +75,17 @@ function refillDeckFromDiscard() {
 /* ---------- SOCKET ---------- */
 
 io.on("connection", socket => {
+
+    if (players.length >= 2) {
+        socket.emit("roomFull");
+        socket.disconnect(true);
+        return;
+    }
+
+    console.log("Connected:", socket.id);
+
+    players.push(socket.id);
+    hands[socket.id] = [];
     console.log("Connected:", socket.id);
 
     // Add player
@@ -185,7 +196,7 @@ io.on("connection", socket => {
             hands[socket.id].push(deck.pop());
             MultiDraw = true;
             drawStack -= 1;
-            if (drawStack == 0){
+            if (drawStack == 0) {
                 nextTurn();
             }
             broadcast();
@@ -204,7 +215,7 @@ io.on("connection", socket => {
 
         if (!playable || MultiDraw) {
             // ❌ Not playable → goes to hand
-            if (count === 1){
+            if (count === 1) {
                 MultiDraw = false;
             }
             hands[socket.id].push(drawnCard);
