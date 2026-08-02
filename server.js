@@ -199,8 +199,6 @@ if (fs.existsSync("./data.json")) {
 
 io.on("connection", socket => {
 
-    console.log("Connected:", socket.id);
-
     // Add player
     let seat = -1;
 
@@ -218,6 +216,8 @@ io.on("connection", socket => {
 
     players[seat].connected = true;
     players[seat].socketId = socket.id;
+
+    console.log("Connected:", socket.id, "\tActive Player Count:", players.filter(p => p.connected).length);
 
     socket.seat = seat;
 
@@ -411,12 +411,11 @@ io.on("connection", socket => {
         players[socket.seat].connected = false;
         players[socket.seat].socketId = null;
 
+        console.log("DisConnected:", socket.id, "\tActive Player Count:", players.filter(p => p.connected).length);
+
         broadcast();
 
-        io.emit(
-            "playerCount",
-            players.filter(p => p.connected).length
-        );
+        io.emit("playerCount", players.filter(p => p.connected).length);
 
         saveGame();
     });
