@@ -411,13 +411,20 @@ io.on("connection", socket => {
         players[socket.seat].connected = false;
         players[socket.seat].socketId = null;
 
-        console.log("DisConnected:", socket.id, "\tActive Player Count:", players.filter(p => p.connected).length);
+        const ActvPlrCount = players.filter(p => p.connected).length;
+
+        console.log("DisConnected:", socket.id, "\tActive Player Count:", ActvPlrCount);
 
         broadcast();
 
-        io.emit("playerCount", players.filter(p => p.connected).length);
+        io.emit("playerCount", ActvPlrCount);
 
-        saveGame();
+        if (ActvPlrCount == 0){
+            resetGame();
+        }
+        else{
+            saveGame();
+        }
     });
 });
 
