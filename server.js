@@ -1,6 +1,7 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const fs = require("fs");
 
 const { createDeck, isValidPlay, dealHands, shuffle } = require("./cards.js");
 
@@ -12,8 +13,23 @@ app.use(express.static("public"));
 
 /* ---------- GAME STATE ---------- */
 
-let players = [];
-let hands = {};
+let players = [
+    {
+        seat: 0,
+        socketId: null,
+        connected: false
+    },
+    {
+        seat: 1,
+        socketId: null,
+        connected: false
+    }
+];
+
+let hands = {
+    0: [],
+    1: []
+};
 let deck = [];
 let discardPile = null;
 let discardHistory = [];
@@ -24,9 +40,40 @@ let activeColor = null;
 
 /* ---------- HELPERS ---------- */
 
+function saveGame() {
+
+    const savedPlayers = players.map(p => ({
+        seat: p.seat,
+        token: p.token || null
+    }));
+
+    fs.writeFileSync(
+        "./data.json",
+        JSON.stringify({
+            players: savedPlayers,
+            hands,
+            deck,
+            discardPile,
+            discardHistory,
+            currentTurn,
+            direction,
+            drawStack,
+            activeColor
+        }, null, 2)
+    );
+}
+
 function startGame() {
     deck = createDeck();
-    hands = dealHands(deck, players);
+    hands = {
+        0: [],
+        1: []
+    };
+
+    const dealt = dealHands(deck, [0, 1]);
+
+    hands[0] = dealt[0];
+    hands[1] = dealt[1];
 
     // Ensure first discard is NOT wild +4
     do {
@@ -40,6 +87,7 @@ function startGame() {
     drawStack = 0;
 
     broadcast();
+    saveGame();
 }
 
 function nextTurn() {
@@ -54,7 +102,7 @@ function nextTurn() {
 
 function broadcast() {
     io.emit("gameState", {
-        players,
+        players: players.map(p => p.connected),
         hands,
         discardPile,
         currentTurn,
@@ -72,44 +120,93 @@ function refillDeckFromDiscard() {
     discardPile = topCard;
 }
 
+if (fs.existsSync("./data.json")) {
+
+    const data = JSON.parse(
+        fs.readFileSync("./data.json")
+    );
+
+    players = data.players || [
+        {
+            seat: 0,
+            socketId: null,
+            connected: false
+        },
+        {
+            seat: 1,
+            socketId: null,
+            connected: false
+        }
+    ];
+    players.forEach(p => {
+        p.connected = false;
+        p.socketId = null;
+    });
+
+    players.forEach(p => {
+        p.socketId = null;
+    });
+
+    hands = data.hands || {
+        0: [],
+        1: []
+    };
+    deck = data.deck || [];
+    discardPile = data.discardPile;
+    discardHistory = data.discardHistory || [];
+    currentTurn = data.currentTurn || 0;
+    direction = data.direction || 1;
+    drawStack = data.drawStack || 0;
+    activeColor = data.activeColor || null;
+}
+
 /* ---------- SOCKET ---------- */
 
 io.on("connection", socket => {
 
-    if (players.length >= 2) {
+    console.log("Connected:", socket.id);
+
+    // Add player
+    let seat = -1;
+
+    if (!players[0].connected) {
+        seat = 0;
+    }
+    else if (!players[1].connected) {
+        seat = 1;
+    }
+    else {
         socket.emit("roomFull");
         socket.disconnect(true);
         return;
     }
 
-    console.log("Connected:", socket.id);
+    players[seat].connected = true;
+    players[seat].socketId = socket.id;
 
-    players.push(socket.id);
-    hands[socket.id] = [];
-    console.log("Connected:", socket.id);
-
-    // Add player
-    players.push(socket.id);
-    hands[socket.id] = []; // 🔥 IMPORTANT
+    socket.seat = seat;
 
     socket.emit("playerData", {
-        id: socket.id,
-        index: players.length - 1
+        id: seat,
+        index: seat
     });
 
-    io.emit("playerCount", players.length);
-    // Start game when 2+ players
-    if (players.length >= 2 && deck.length === 0) {
-        startGame();
+    const count = players.filter(p => p.connected).length;
+
+    io.emit("playerCount", count);
+
+    if (count === 2 && deck.length === 0) {
+        startGame();      // startGame() already saves the game
     } else {
         broadcast();
+        saveGame();       // Save waiting room state
     }
 
     socket.on("playCard", data => {
-        if (players[currentTurn] !== socket.id) return;
+        if (players[currentTurn].socketId !== socket.id) return;
 
         const { index, chosenColor } = data;
-        const hand = hands[socket.id];
+        const hand = hands[socket.seat];
         let card;
 
         if (index === -1 && data.drawnCard) {
@@ -151,7 +248,8 @@ io.on("connection", socket => {
         }
 
         if (hand.length === 0) {
-            io.emit("gameOver", socket.id);
+            io.emit("gameOver", socket.seat);
+            saveGame();
             return;
         }
 
@@ -167,7 +265,7 @@ io.on("connection", socket => {
 
         // Special handling for Reverse card
         if (card.value === "reverse") {
-            if (players.length === 2) {
+            if (players.filter(p => p.connected).length === 2) {
                 // If there are only two players, skip the other player's turn
                 nextTurn();  // Skip the other player's turn (move to next player immediately)
             } else {
@@ -182,10 +280,11 @@ io.on("connection", socket => {
         // Proceed to the next turn
         nextTurn();
         broadcast();  // Broadcast the game state to all players
+        saveGame();
     });
     let MultiDraw = false;
     socket.on("drawCard", () => {
-        if (players[currentTurn] !== socket.id) return;
+        if (players[currentTurn].socketId !== socket.id) return;
 
         const count = drawStack || 1;
 
@@ -193,13 +292,14 @@ io.on("connection", socket => {
         if (count > 1) {
             if (deck.length === 0) refillDeckFromDiscard();
             if (deck.length === 0) return;
-            hands[socket.id].push(deck.pop());
+            hands[socket.seat].push(deck.pop());
             MultiDraw = true;
             drawStack -= 1;
             if (drawStack == 0) {
                 nextTurn();
             }
             broadcast();
+            saveGame();
             return;
         }
 
@@ -218,9 +318,10 @@ io.on("connection", socket => {
             if (count === 1) {
                 MultiDraw = false;
             }
-            hands[socket.id].push(drawnCard);
+            hands[socket.seat].push(drawnCard);
             nextTurn();
             broadcast();
+            saveGame();
             return;
         }
 
@@ -241,38 +342,36 @@ io.on("connection", socket => {
         if (drawnCard.value === "+10") drawStack += 10;
 
         if (drawnCard.value === "reverse") {
-            if (players.length === 2) nextTurn();
-            else direction *= -1;
+            if (players.filter(p => p.connected).length === 2) {
+                nextTurn();
+            }
+            else {
+                direction *= -1;
+            }
         }
 
         if (drawnCard.value === "skip") nextTurn();
 
         nextTurn();
         broadcast();
+        saveGame();
     });
 
     socket.on("disconnect", () => {
-        const i = players.indexOf(socket.id);
-        if (i !== -1) {
-            players.splice(i, 1);
-            delete hands[socket.id];
 
-            if (currentTurn >= players.length) {
-                currentTurn = 0;
-            }
-        }
+        if (socket.seat === undefined) return;
 
-        // 🔥 RESET GAME WHEN EMPTY
-        if (players.length === 0) {
-            deck = [];
-            hands = {};
-            discardPile = null;
-            currentTurn = 0;
-            direction = 1;
-            drawStack = 0;
-        }
+        players[socket.seat].connected = false;
+        players[socket.seat].socketId = null;
 
         broadcast();
+
+        io.emit(
+            "playerCount",
+            players.filter(p => p.connected).length
+        );
+
+        saveGame();
     });
 });
 

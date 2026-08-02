@@ -75,7 +75,7 @@ socket.on("roomFull", () => {
 });
 
 socket.on("gameState", state => {
-  if (!myId || !state.players || !state.hands) return;
+  if (myId === null || !state.players || !state.hands) return;
 
   if (!state.hands || !state.hands[myId]) return;
 
@@ -89,7 +89,7 @@ socket.on("gameState", state => {
 
 
   const myHand = state.hands[myId];
-  const isMyTurn = state.players[state.currentTurn] === myId;
+  const isMyTurn = state.currentTurn === myId;
 
   renderHand(myHand, isMyTurn);
   renderDiscard(state.discardPile);
