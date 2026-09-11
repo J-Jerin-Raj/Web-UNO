@@ -13,23 +13,15 @@ app.use(express.static("public"));
 
 /* ---------- GAME STATE ---------- */
 
-let players = [
-    {
-        seat: 0,
-        socketId: null,
-        connected: false
-    },
-    {
-        seat: 1,
-        socketId: null,
-        connected: false
-    }
-];
+const MAX_PLAYERS = 4;
+let players = Array.from({ length: MAX_PLAYERS }, (_, i) => ({
+    seat: i,
+    socketId: null,
+    connected: false
+}));
 
-let hands = {
-    0: [],
-    1: []
-};
+let hands = {};
+for (let i = 0; i < MAX_PLAYERS; i++) hands[i] = [];
 let deck = [];
 let discardPile = null;
 let discardHistory = [];
@@ -65,15 +57,15 @@ function saveGame() {
 
 function startGame() {
     deck = createDeck();
-    hands = {
-        0: [],
-        1: []
-    };
+    hands = {};
+    for (let i = 0; i < MAX_PLAYERS; i++) hands[i] = [];
 
-    const dealt = dealHands(deck, [0, 1]);
+    const connectedSeats = players.filter(p => p.connected).map(p => p.seat);
+    const dealt = dealHands(deck, connectedSeats);
 
-    hands[0] = dealt[0];
-    hands[1] = dealt[1];
+    connectedSeats.forEach(seat => {
+        hands[seat] = dealt[seat];
+    });
 
     // Ensure first discard is NOT wild +4
     do {
@@ -91,13 +83,13 @@ function startGame() {
 }
 
 function nextTurn() {
-    if (direction === 1) {
-        // Move to the next player (clockwise)
-        currentTurn = (currentTurn + 1) % players.length;
-    } else {
-        // Move to the previous player (counterclockwise)
-        currentTurn = (currentTurn - 1 + players.length) % players.length;
-    }
+    do {
+        if (direction === 1) {
+            currentTurn = (currentTurn + 1) % MAX_PLAYERS;
+        } else {
+            currentTurn = (currentTurn - 1 + MAX_PLAYERS) % MAX_PLAYERS;
+        }
+    } while (!players[currentTurn].connected);
 }
 
 function broadcast() {
@@ -124,10 +116,8 @@ function resetGame() {
 
     deck = [];
 
-    hands = {
-        0: [],
-        1: []
-    };
+    hands = {};
+    for (let i = 0; i < MAX_PLAYERS; i++) hands[i] = [];
 
     discardPile = null;
     discardHistory = [];
@@ -145,18 +135,14 @@ if (fs.existsSync("./data.json")) {
         fs.readFileSync("./data.json")
     );
 
-    players = data.players || [
-        {
-            seat: 0,
-            socketId: null,
-            connected: false
-        },
-        {
-            seat: 1,
-            socketId: null,
-            connected: false
-        }
-    ];
+    players = data.players || Array.from({ length: MAX_PLAYERS }, (_, i) => ({
+        seat: i,
+        socketId: null,
+        connected: false
+    }));
+    while(players.length < MAX_PLAYERS) {
+        players.push({ seat: players.length, socketId: null, connected: false });
+    }
     players.forEach(p => {
         p.connected = false;
         p.socketId = null;
@@ -169,20 +155,18 @@ if (fs.existsSync("./data.json")) {
     if (data.discardPile === null) {
 
         // Previous game ended
-        hands = {
-            0: [],
-            1: []
-        };
+        hands = {};
+        for (let i = 0; i < MAX_PLAYERS; i++) hands[i] = [];
 
         deck = [];
 
     }
     else {
 
-        hands = data.hands || {
-            0: [],
-            1: []
-        };
+        hands = data.hands || {};
+        for (let i = 0; i < MAX_PLAYERS; i++) {
+            if (!hands[i]) hands[i] = [];
+        }
 
         deck = data.deck || [];
     }
@@ -200,15 +184,8 @@ if (fs.existsSync("./data.json")) {
 io.on("connection", socket => {
 
     // Add player
-    let seat = -1;
-
-    if (!players[0].connected) {
-        seat = 0;
-    }
-    else if (!players[1].connected) {
-        seat = 1;
-    }
-    else {
+    let seat = players.findIndex(p => !p.connected);
+    if (seat === -1) {
         socket.emit("roomFull");
         socket.disconnect(true);
         return;
@@ -230,12 +207,15 @@ io.on("connection", socket => {
 
     io.emit("playerCount", count);
 
-    if (count === 2 && deck.length === 0) {
-        startGame();      // startGame() already saves the game
-    } else {
-        broadcast();
-        saveGame();       // Save waiting room state
-    }
+    broadcast();
+    saveGame();
+    
+    socket.on("startGame", () => {
+        const connectedCount = players.filter(p => p.connected).length;
+        if (connectedCount >= 2 && deck.length === 0) {
+            startGame();
+        }
+    });
 
     socket.on("playCard", data => {
         if (players[currentTurn].socketId !== socket.id) return;
@@ -393,15 +373,10 @@ io.on("connection", socket => {
     });
 
     socket.on("playAgain", () => {
-
-        const count = players.filter(
-            p => p.connected
-        ).length;
-
-        if (count === 2) {
+        const count = players.filter(p => p.connected).length;
+        if (count >= 2) {
             startGame();
         }
-
     });
 
     socket.on("disconnect", () => {

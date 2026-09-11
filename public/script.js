@@ -8,7 +8,7 @@ const playerCountSpan = document.getElementById("playerCount");
 const winTitle = document.getElementById("winTitle");
 
 startBtn.onclick = () => {
-  menu.style.display = "none";
+  socket.emit("startGame");
 };
 
 const socket = io();
@@ -79,6 +79,10 @@ socket.on("gameState", state => {
 
   if (!state.hands || !state.hands[myId]) return;
 
+  if (state.discardPile) {
+    document.getElementById("menu").style.display = "none";
+  }
+
   currentDrawStack = state.drawStack;
 
   discardDiv.className = "pile";
@@ -107,9 +111,12 @@ socket.on("gameState", state => {
 socket.on("playerCount", count => {
   playerCountSpan.textContent = count;
 
-  if (count === 2) {
+  if (count >= 2) {
     startBtn.disabled = false;
     startBtn.textContent = "Start Game";
+  } else {
+    startBtn.disabled = true;
+    startBtn.textContent = "Waiting for Players...";
   }
 });
 
