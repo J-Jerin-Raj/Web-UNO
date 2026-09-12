@@ -188,7 +188,7 @@ function renderHand(hand, isMyTurn) {
   const startAngle = -spread / 2;
 
   // 🔥 NEW
-  const MAX_HAND_WIDTH = 520;
+  const MAX_HAND_WIDTH = Math.min(520, window.innerWidth - 20);
   const CARD_WIDTH = 85;
   const MIN_SPACING = 14;
   const MAX_SPACING = 38;
@@ -369,4 +369,23 @@ function getCardImage(card) {
 
   // Normal cards: red_5.png, blue_skip.png, etc.
   return `/cards/${color}_${value}.png`;
+}
+
+document.getElementById('refreshBtn')?.addEventListener('click', () => location.reload());
+
+function toggleFullScreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => console.error(err));
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+const fsBtn = document.getElementById('fullscreenBtn');
+if (fsBtn) {
+  if (!document.documentElement.requestFullscreen) {
+    fsBtn.style.display = 'none';
+  } else {
+    fsBtn.addEventListener('click', toggleFullScreen);
+  }
 }

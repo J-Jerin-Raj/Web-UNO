@@ -294,3 +294,66 @@ body {
   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   z-index: 100;
 }
+
+/* Make non-card elements smaller to fit the 85px cards */
+@media (max-width: 768px) {
+  .player .badge { font-size: 0.7rem; padding: 3px 6px; }
+  .card-back { width: 40px; height: 60px; margin-top: 2px; }
+  .pile { width: 60px; height: 90px; font-size: 14px; }
+  #draw-pile .stack { font-size: 16px; }
+  .current-color { font-size: 12px; padding: 4px 8px; min-width: 100px; }
+  .top { top: 1%; }
+  .bottom { bottom: 1%; }
+  .left { left: 1%; }
+  .right { right: 1%; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  #table { border-radius: 30%; } /* prevent extreme oval */
+  .top { top: -2%; }
+  .current-color { top: 15%; }
+  #center { top: 40%; }
+  .bottom { bottom: 2%; }
+  .hand { height: 100px; }
+  .hand .card:hover { bottom: 15px; }
+}
+
+/* Refresh Button */
+#refreshBtn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px;
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#refreshBtn:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+/* Fullscreen Button */
+#fullscreenBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px;
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#fullscreenBtn:hover {
+  background: rgba(0,0,0,0.8);
+}
