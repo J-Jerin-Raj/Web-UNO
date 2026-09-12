@@ -25,6 +25,8 @@ const colorPicker = document.getElementById("colorPicker");
 let pendingWildIndex = null;  // for wild from HAND
 let pendingWildCard = null;   // for wild from DRAW
 
+let crds;
+
 document.querySelectorAll(".colors button").forEach(btn => {
   btn.onclick = () => {
     const chosenColor = btn.dataset.color;
@@ -50,6 +52,10 @@ document.querySelectorAll(".colors button").forEach(btn => {
       pendingWildIndex = null;
     }
   };
+});
+
+socket.on("Cardl",data => {
+  crds=data;
 });
 
 socket.on("playerData", data => {
@@ -98,8 +104,7 @@ socket.on("gameState", state => {
   renderHand(myHand, isMyTurn);
   renderDiscard(state.discardPile);
 
-  drawPile.style.background =
-    "url(/cards/back.png) center/cover no-repeat";
+  drawPile.style.background = `url(${crds}/back.png) center/cover no-repeat`;
 
   if (state.drawStack > 0) {
     drawPile.innerHTML = `<span class="stack">${state.drawStack}</span>`;
@@ -335,7 +340,7 @@ function animateMultipleDraws(count) {
 
   for (let i = 0; i < count; i++) {
     setTimeout(() => {
-      animateDrawToHand(drawPile, "/cards/back.png");
+      animateDrawToHand(drawPile, `${crds}/back.png`);
       socket.emit("drawCard");
     }, i * delayBetweenCards);
   }
@@ -364,11 +369,11 @@ function getCardImage(card) {
   if (card.color === "wild" && card.chosenColor) {
     // 🔥 YOUR REQUESTED FORMAT:
     // wild_plus4_blue.png
-    return `/cards/wild_${value}_${card.chosenColor}.png`;
+    return `${crds}/wild_${value}_${card.chosenColor}.png`;
   }
 
   // Normal cards: red_5.png, blue_skip.png, etc.
-  return `/cards/${color}_${value}.png`;
+  return `${crds}/${color}_${value}.png`;
 }
 
 document.getElementById('refreshBtn')?.addEventListener('click', () => location.reload());

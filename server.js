@@ -11,6 +11,8 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+const URL = process.env.URL;
+
 /* ---------- GAME STATE ---------- */
 
 const MAX_PLAYERS = 4;
@@ -182,6 +184,8 @@ if (fs.existsSync("./data.json")) {
 /* ---------- SOCKET ---------- */
 
 io.on("connection", socket => {
+    
+    socket.emit("Cardl", l=URL);
 
     // Add player
     let seat = players.findIndex(p => !p.connected);
