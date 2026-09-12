@@ -56,6 +56,7 @@ document.querySelectorAll(".colors button").forEach(btn => {
 
 socket.on("Cardl",data => {
   crds=data;
+  preloadCardImages();
 });
 
 socket.on("playerData", data => {
@@ -394,4 +395,48 @@ if (fsBtn) {
   } else {
     fsBtn.addEventListener('click', toggleFullScreen);
   }
+}
+
+
+// --- IMAGE PRELOADING ---
+function preloadCardImages() {
+  if (!crds) return;
+
+  const colors = ["red", "blue", "green", "yellow"];
+  const values = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "skip", "reverse", "plus2"];
+  const images = [`${crds}/back.png`, `${crds}/wild_wild.png`];
+
+  // Normal cards
+  for (const color of colors) {
+    for (const value of values) {
+      images.push(`${crds}/${color}_${value}.png`);
+    }
+  }
+
+  // Wild cards
+  for (const value of ["plus4", "plus6", "plus10"]) {
+    images.push(`${crds}/wild_${value}.png`);
+    for (const color of colors) {
+      images.push(`${crds}/wild_${value}_${color}.png`);
+    }
+  }
+
+  let cacheDiv = document.getElementById("hidden-image-cache");
+  if (!cacheDiv) {
+    cacheDiv = document.createElement("div");
+    cacheDiv.id = "hidden-image-cache";
+    cacheDiv.style.position = "absolute";
+    cacheDiv.style.width = "0px";
+    cacheDiv.style.height = "0px";
+    cacheDiv.style.overflow = "hidden";
+    cacheDiv.style.opacity = "0";
+    cacheDiv.style.pointerEvents = "none";
+    document.body.appendChild(cacheDiv);
+  }
+
+  images.forEach(src => {
+    const img = new Image();
+    img.src = src;
+    cacheDiv.appendChild(img);
+  });
 }
